@@ -11,9 +11,9 @@ Processing reads data produces by Illumina sequencers. It has been tested on MiS
 ### What data are required for this applet to run?
 
 1. Lane data archive
-This applet requires a tar archive of the BaseCalls lane directory from the sequencing run directory, i.e. Run_directory/Data/Intensitites/BaseCalls/L001. You should be able to generate the required archive by running the following tar command from the command-line console:
-
-    $ tar -C run_directory_path -cf output_tar_file_path Data/Intensities/BaseCalls/L00N
+This applet requires a tar archive of the BaseCalls lane directory from the sequencing run directory, i.e. Run_directory/Data/Intensitites/BaseCalls/L001. You should be able to generate the required archive by running the following tar command from the command-line console.
+    
+``$ tar -C run_directory_path -cf output_tar_file_path Data/Intensities/BaseCalls/L00N``
 
 2. Metadata archive
 It also requires a tar archive of run metadata files. The metadata archive should include the following files: runParameters.xml, RunInfo.xml, RTAConfiguration.xml, RTAComplete.txt, Data/Intensities/s.locs, as well as the following directories: RTALogs, Recipe, Config.
