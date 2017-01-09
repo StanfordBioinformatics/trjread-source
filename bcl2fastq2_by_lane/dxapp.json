@@ -179,5 +179,11 @@
     "access": {
         "allProjects": "ADMINISTER",
         "network": ["*"]
+    },
+    "details": {
+        "upstreamUrl": "http://support.illumina.com/downloads/bcl2fastq-conversion-software-v217.html",
+        "upstreamVersion": "2.17.1.14",
+        "upstreamLicenses": [],
+        "whatsNew": "* 1.0.0: Initial version"
     }
 }
