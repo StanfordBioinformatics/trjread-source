@@ -1,25 +1,12 @@
 #!usr/bin/env python
-'''
-Description: Convert bcl files output by illumina sequencing platforms to unmapped 
-             fastq files. It will be the first applet called by most sequence 
-             processing workflows on DNAnexus.
-Args : DNAnexus ID of dashboard record for sequencing lane project
-Returns : 
-Author : pbilling
+'''Convert one flowcell lane of illumina BCL files to demultiplexed FastQs.
+
+Docstring formatting: 
+    http://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html
+
 '''
 
 __author__ = 'pbilling@stanford.edu (Paul Billing-Ross)'
-
-## TO DO
-# Upload log file
-# Integrate barcode names
-# Add descriptions to all methods
-# Test on 
-#   no barcodes
-#   single-index single-end
-#   dual-index   single-end
-#   dual-index   paired-end
-# Add App metadata (?)
 
 import os
 import re
@@ -266,19 +253,18 @@ class Bcl2fastqJob:
     Run Illumina bcl2fastq software to generate fastq files
     for one lane of flowcell data.
 
+    Args:
+        run_name (str): Sequencing run name.
+        lane_index: Index of Illumina flowcell lane (1-8).
+
     Attributes:
         run_name (str): Sequencing run name.
         lane_index (int): Index of Illumina flowcell lane (1-8).
         sample_sheet (str): Name of the CSV sample sheet to be generated.
+    
     '''
 
     def __init__(self, run_name, lane_index):
-        '''Initialize Bcl2fastqJobs
-
-        Args:
-            run_name (str): Sequencing run name.
-            lane_index: Index of Illumina flowcell lane (1-8).
-        '''
 
         self.run_name = run_name
         self.lane_index = lane_index
@@ -296,6 +282,10 @@ class Bcl2fastqJob:
 
         Args:
             barcodes_file (str): n
+
+        Returns:
+            tuple: Name of sample sheet and dictionary of barcode:sample_id
+
         '''
         barcode_sample_dict = {}
 
@@ -345,6 +335,17 @@ class Bcl2fastqJob:
 
     def run(self, use_bases_mask, tools_used_dict, options_dict, flags_dict):
         '''Run bcl2fastq2 program.
+
+        Args:
+            use_bases_mask (str): Description of barcode masking pattern
+            tools_used_dict (dict): Descritpion of executables and 
+                                    configurations used by App
+            options_dict (dict): Qualitative app configuration data
+            flags_dict (dict): Boolean app configuration data
+
+        Returns:
+            tuple: stdout,stderr information from running bcl2fastq2 executable
+
         '''
         
         command = 'bcl2fastq ' 
@@ -368,9 +369,7 @@ class Bcl2fastqJob:
 class GetUseBasesMaskJob:
     '''Calculates use_bases_mask value from barcodes & RunInfo.xml.
 
-    Args:
-        barcodes (dict): Key: barcode sequence, Value: barcode name.
-        runinfo (str): Path to RunInfo.xml file.
+    <Explanation of use-bases-mask and why it's necessary>.
 
     '''
 
@@ -378,8 +377,16 @@ class GetUseBasesMaskJob:
         pass
 
     # I think these two should be private functions.
-    def get_use_bases_mask(self, run_info_file, index_lengths_list):
+    def _get_use_bases_mask(self, run_info_file, index_lengths_list):
         '''Get --use-bases-mask value.
+
+        Args:
+            run_info_file (str): Filename of RunInfo.xml file ("RunInfo.xml")
+            index_lengths_list (list): These lengths should all be the same
+
+        Returns:
+            str: Describes how to parse barcodes for demultiplexing
+
         '''
 
         mask_elements = {}       
@@ -427,15 +434,15 @@ class GetUseBasesMaskJob:
         use_bases_mask = ','.join(sorted_mask_elements)
         return use_bases_mask
 
-    def count_index_lengths(self, barcodes, index_lengths=[]):
-        '''What does this do?
+    def _count_index_lengths(self, barcodes, index_lengths=[]):
+        '''Recursive function to get index lengths of all barcodes.
 
         Args:
-            barcodes (?): List of barcodes(?)
-            index_lengths: List of index lengths (?)
+            barcodes (list): List of barcodes (i.e. i7_index-i5_index)
+            index_lengths (list): List of index lengths (?)
 
         Returns:
-            int(?):
+            list: List of tuples with i7 and i5 index lengths
 
         '''
 
@@ -443,7 +450,7 @@ class GetUseBasesMaskJob:
             barcode = barcodes.pop()
             logger.info('Getting barcode length: {}'.format(barcode))
         except:
-            # No more barcodes to parse
+            # All barcodes have been parsed
             logger.info('No more barcodes')
             return index_lengths
 
@@ -475,14 +482,27 @@ class GetUseBasesMaskJob:
         if len(barcodes_list) == 0:
             index_lengths = (0,0)
         else:
-            index_lengths = self.count_index_lengths(barcodes_list)
+            index_lengths = self._count_index_lengths(barcodes_list)
         logger.info('Index lengths: {}'.format(index_lengths))
 
-        use_bases_mask = self.get_use_bases_mask(run_info_file, index_lengths)
+        use_bases_mask = self._get_use_bases_mask(run_info_file, index_lengths)
         logger.info('--use-bases-mask {}'.format(use_bases_mask))
         return use_bases_mask
 
 class Bcl2fastqFileUploader:
+    '''Upload bcl2fastq2 output files.
+
+    Upload resulting fastq files as well as intermediate and accessory files.
+
+    Args:
+        project_dxid (str): ID of project where files will be uploaded.
+        project_path (str): Folder path where files will be uploaded. 
+
+    Attributes:
+        project_dxid (str): ID of project where files will be uploaded.
+        project_path (str): Folder path where files will be uploaded.
+
+    '''
 
     def __init__(self, project_dxid, project_path):
 
@@ -490,7 +510,15 @@ class Bcl2fastqFileUploader:
         self.project_path = project_path
 
     def upload_fastq_files(self, raw_properties, tags):
-        '''Recursively find and upload all fastqs to DNAnexus object store 
+        '''Recursively find and upload all fastqs to DNAnexus object store.
+
+        Args:
+            raw_properties (dict): Properties with values of different types.
+            tags (list): List of descriptive tags.
+
+        Returns:
+            list: DXLinks to all uploaded fastq files.
+        
         '''
 
         fastq_dxlinks = []
@@ -523,7 +551,15 @@ class Bcl2fastqFileUploader:
         return fastq_dxlinks
 
     def upload_sample_sheet(self, local_file_path, raw_properties):
-        '''Upload sample sheet to DNAnexus project
+        '''Upload sample sheet to DNAnexus project.
+
+        Args:
+            local_file_path (str): Local path of sample sheet.
+            raw_properties (dict): Properties with values of different types.
+
+        Returns:
+            str: DXLink to sample sheet on DNAnexus object store.
+
         '''
 
         # Convert all property values to strings
@@ -540,6 +576,16 @@ class Bcl2fastqFileUploader:
         return dxpy.dxlink(sample_sheet_dxid)
 
     def upload_lane_html(self, raw_properties, tags):
+        '''Upload lane.html file to DNAnexus project.
+        
+        Args:
+            local_file_path (str): Local path of sample sheet.
+            raw_properties (dict): Properties with values of different types.
+
+        Returns:
+            str: DXLink to lane.html file on DNAnexus object store.
+
+        '''
 
         # Convert all property values to strings
         properties = {key : str(value) for key, value in raw_properties.items()}
@@ -565,6 +611,13 @@ class Bcl2fastqFileUploader:
 
     def upload_tools_used(self, tools_used_dict, raw_properties):
         '''Write console commands to Tools Used file & upload.
+
+        Args:
+            tools_used_dict (dict): Description of executables & configurations.
+            raw_properties (dict): Properties with values of different types.
+
+        Returns:
+            str: DXLink to "tools used" file on DNAnexus object store.
         '''
 
         # Convert all property values to strings
@@ -587,14 +640,16 @@ class Bcl2fastqFileUploader:
                                                  parents = True)
         return dxpy.dxlink(tools_used_dxid)
 
-    def upload_log_file(self, log_file, raw_properties, tags):
-        WRITE_THIS_METHOD
+    def _find_fastqs(self):
+        '''Recursively find all fastq files in directory path.
 
-    def _find_fastqs(self, dir):
-        '''Recursively find all fastq files in directory path
+        Returns:
+            list: Paths of found fastq files.
+
         '''
         
         matches = []
+        # /home/dnexus is default location for dxpy.download_dxfile
         for root, dirnames, filenames in os.walk('/home/dnanexus'):
             for filename in fnmatch.filter(filenames, '*.fastq.gz'):
                 matches.append(os.path.join(root, filename))
@@ -603,6 +658,16 @@ class Bcl2fastqFileUploader:
 
     def _get_scgpm_fastq_name(self, fastq_path, flowcell_id, library_name, lane_index):
         '''Get SCGPM formatted fastq name, barcode, and read index. 
+
+        Args:
+            fastq_path (str): Local path to fastq file.
+            flowcell_id (str): Flowcell ID fastq was sequenced on.
+            library_name (str): Arbitrary library name.
+            lane_index (int): Flowcell lane index (1-8).
+
+        Returns:
+            tuple: (str) new fastq name; (str) fastq barcode; (int) read index (1/2)
+
         '''
 
         fastq_filename = os.path.basename(fastq_path)
@@ -642,13 +707,19 @@ class Bcl2fastqFileUploader:
 
 @dxpy.entry_point("main")
 def main(**applet_inputs):
-    '''Use illumina bcl2fastq applet to perform demultiplex and 
+    '''Run bcl2fastq2 to generate and demultiplex fastq files.
+
+    Use illumina bcl2fastq applet to perform demultiplex and 
     convert bcl files to fastq files. Currently handles files generated from
     RTA version 2.7.3 and earlier.
 
-    Input:
+    Args:
         applet_input (dict): Input parameters specified when calling applet 
                              from DNAnexus
+
+    Returns:
+        dict: Names of outputs and corresponding file dxids.
+
     '''
 
     ## Define all variables here
