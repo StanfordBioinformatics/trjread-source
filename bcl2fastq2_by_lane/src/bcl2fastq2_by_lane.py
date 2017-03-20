@@ -19,7 +19,7 @@ __author__ = 'pbilling@stanford.edu (Paul Billing-Ross)'
 #   single-index single-end
 #   dual-index   single-end
 #   dual-index   paired-end
-# Add App metadata
+# Add App metadata (?)
 
 import os
 import re
@@ -39,6 +39,15 @@ from xml.etree import ElementTree
 LOCAL_OUTPUT = 'output'
 
 def parse_applet_inputs(applet_inputs):
+    '''Parse applet inputs.
+
+    Args:
+        applet_inputs (dict): All applet inputs.
+
+    Returns:
+        tuple: 5-item tuple with inputs separated into functional categories.
+
+    '''
 
     # Stratify inputs by functional category
     applet_keys = (
@@ -83,9 +92,12 @@ def parse_applet_inputs(applet_inputs):
                   key : value 
                   for key, value in applet_inputs.items() 
                   if key in options_flags 
-                  and value is True}
+                  and value is True
+                 }
     
-    tags = applet_inputs['tags']
+    if 'tags' in applet_inputs:
+        tags = applet_inputs['tags']
+
     if 'properties' in applet_inputs.keys():
         logger.warning('Extra properties will overwrite existing values' +
                        'in sample_args')
@@ -94,21 +106,41 @@ def parse_applet_inputs(applet_inputs):
     return applet_args, sample_args, options_dict, flags_dict, tags
 
 def download_file(file_dxid):
-    """
-    Args    : dx_file - a file object ID on DNAnexus to the current working directory.
-    Returns : str. Path to downloaded file.
-    """
+    '''Download file from DX Object store
+
+    Args: 
+        file_dxid (str): DNAnexus ID of file to be downloaded.
+    
+    Returns: 
+        str: Path to downloaded file.
+    
+    '''
+
     dx_file = dxpy.DXFile(file_dxid)
     filename = dx_file.describe()['name']
     dxpy.download_dxfile(dxid=dx_file.get_id(), filename=filename)
     return filename
 
 def untar_file(filename):
+    '''Extract tar archive.
+
+    Args:
+        filename (str): Name of tar archive.
+
+    '''
+
     command = 'tar -xf %s --owner root --group root --no-same-owner' % filename
     create_subprocess(cmd=command, pipeStdout=False)
 
 def get_flowcell_id(run_info_xml):
-    '''Parse Flowcell ID from RunInfo.xml file
+    '''Parse Flowcell ID from RunInfo.xml file.
+
+    Args:
+        run_info_xml (str): Name of local RunInfo.xml file.
+
+    Returns:
+        str: Flowcell ID.
+
     '''
 
     with open(run_info_xml, 'r') as XML:
@@ -120,8 +152,21 @@ def get_flowcell_id(run_info_xml):
         logger.error('Could not parse Flowcell ID from RunInfo.xml')
 
 def truncate_flowcell_id(flowcell_id):
-    # HFNKGBBXX
-    # 000000000-AMG8G
+    '''Helper function to truncate flowcell IDs.
+
+    Some flowcell IDs are weirdly formatted. This function gets the 5 
+    character flowcell ID relevant for identification.
+        
+    HFNKGBBXX => HFNKG
+    000000000-AMG8G => AMG8G
+
+    Args:
+        flowcell_id (str): Raw flowcell ID.
+
+    Returns:
+        str: A 5-character ID.
+
+    '''
 
     elements = flowcell_id.split('-')
     if len(elements) == 2:
@@ -131,12 +176,20 @@ def truncate_flowcell_id(flowcell_id):
     return trunc_flowcell_id
 
 def configure_logger(name, file_handle=False):
-    # Configure Logger object
-    logger = logging.getLogger(name)    # Create logger object
+    '''Configure logger object.
+    
+    Args: 
+        file_handle (bool): Indicates whether to write log to file.
+
+    Returns:
+        logger: A formatted logger object.
+
+    '''
+
+    logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
-    # Add logging file handler
     if file_handle:
         log_file = '{}.log'.format(name)
         LOG = logging.FileHandler(log_file)
@@ -144,26 +197,33 @@ def configure_logger(name, file_handle=False):
         LOG.setFormatter(formatter)
         logger.addHandler(LOG)
 
-    # Add logging stream handler
-    #STREAM = logging.StreamHandler(sys.stdout)
-    #STREAM.setLevel(logging.DEBUG)
-    #STREAM.setFormatter(formatter)
-    #logger.addHandler(STREAM)
 
     return logger
 
 def create_subprocess(cmd, pipeStdout=False, checkRetcode=True):
-    """
-    Function : Creates a subprocess via a call to subprocess.Popen with the argument 'shell=True', and pipes stdout and stderr. Stderr is always  piped, but stdout can be turned off.
-             If the argument checkRetcode is True, which it is by defualt, then for any non-zero return code, an Exception is
-                         raised that will print out the the command, stdout, stderr, and the returncode when not caught. Otherwise, the Popen instance will be return, in which case the caller must 
-                       call the instance's communicate() method (and not it's wait() method!!) in order to get the return code to see if the command was a success. communicate() will return 
-                         a tuple containing (stdout, stderr). But at that point, you can then check the return code with Popen instance's 'returncode' attribute.
-    Args     : cmd   - str. The command line for the subprocess wrapped in the subprocess.Popen instance. If given, will be printed to stdout when there is an error in the subprocess.
-                         pipeStdout - bool. True means to pipe stdout of the subprocess.
-                         checkRetcode - bool. See documentation in the description above for specifics.
-    Returns  : A two-item tuple containing stdout and stderr, respectively.
-    """
+    '''Creates a subprocess via a call to subprocess
+    
+    Popen with the argument 'shell=True', and pipes stdout and stderr. 
+    Stderr is always  piped, but stdout can be turned off. If the argument 
+    checkRetcode is True, which it is by default, then for any non-zero return 
+    code, an Exception is raised that will print out the the command, stdout, 
+    stderr, and the returncode when not caught. Otherwise, the Popen instance 
+    will be return, in which case the caller must call the instance's 
+    communicate() method (and not it's wait() method!!) in order to get the 
+    return code to see if the command was a success. communicate() will return 
+    a tuple containing (stdout, stderr). But at that point, you can then check 
+    the return code with Popen instance's 'returncode' attribute.
+    
+    Args: 
+        cmd (str): The command line for the subprocess wrapped in the subprocess. 
+        pipeStdout (bool): True means to pipe stdout of the subprocess.
+        checkRetcode (bool): See documentation in the description above for specifics.
+    
+    Returns: 
+        A two-item tuple containing stdout and stderr, respectively.
+    
+    '''
+
     stdout = None
     if pipeStdout:
         stdout = subprocess.PIPE
@@ -184,21 +244,41 @@ def create_subprocess(cmd, pipeStdout=False, checkRetcode=True):
         return popen
 
 def format_library_name(library_name):
-    # Parse library name ("DL_set2_rep1 rcvd 1/4/16")
+    '''Remove datestamp from library name
+
+    Remove artifact of SCGPM library naming.
+
+    Args:
+        library_name (str): Arbitrary name of sequencing library.
+    
+    Returns:
+        formatted_name (str): The reformatted name. 
+    '''
+
     elements = library_name.split('rcvd')
     stripped_name = elements[0].rstrip()
     formatted_name = re.sub(r"[^a-zA-Z0-9]+", "-", stripped_name)
     return formatted_name
 
 class Bcl2fastqJob:
-    '''Converts illumina intensity files to fastqs.
+    '''Converts Illumina intensity files to fastqs.
 
-    Args:
-        bcl2fastq_args (dict): bcl2fastq command-line arguments.
-        lane_index (int): Index of illumina flowcell lane.
+    Run Illumina bcl2fastq software to generate fastq files
+    for one lane of flowcell data.
+
+    Attributes:
+        run_name (str): Sequencing run name.
+        lane_index (int): Index of Illumina flowcell lane (1-8).
+        sample_sheet (str): Name of the CSV sample sheet to be generated.
     '''
 
     def __init__(self, run_name, lane_index):
+        '''Initialize Bcl2fastqJobs
+
+        Args:
+            run_name (str): Sequencing run name.
+            lane_index: Index of Illumina flowcell lane (1-8).
+        '''
 
         self.run_name = run_name
         self.lane_index = lane_index
@@ -208,8 +288,15 @@ class Bcl2fastqJob:
                                                             self.lane_index)
 
     def create_sample_sheet(self, barcodes_file):
-        """Creates sample sheet for bcl2fastq.
-        """
+        '''Creates sample sheet for bcl2fastq.
+
+        Creates a CSV formatted samplesheet with barcode and sample 
+        information used in demultiplexing. Barcodes should be specified
+        
+
+        Args:
+            barcodes_file (str): n
+        '''
         barcode_sample_dict = {}
 
         SHEET = open(self.sample_sheet, 'w')
@@ -279,16 +366,18 @@ class Bcl2fastqJob:
         stdout,stderr = create_subprocess(cmd=command, pipeStdout=True)
 
 class GetUseBasesMaskJob:
-    """Calculates use_bases_mask value from barcodes & RunInfo.xml.
+    '''Calculates use_bases_mask value from barcodes & RunInfo.xml.
 
     Args:
         barcodes (dict): Key: barcode sequence, Value: barcode name.
         runinfo (str): Path to RunInfo.xml file.
-    """
+
+    '''
 
     def __init__(self):
         pass
 
+    # I think these two should be private functions.
     def get_use_bases_mask(self, run_info_file, index_lengths_list):
         '''Get --use-bases-mask value.
         '''
@@ -339,6 +428,17 @@ class GetUseBasesMaskJob:
         return use_bases_mask
 
     def count_index_lengths(self, barcodes, index_lengths=[]):
+        '''What does this do?
+
+        Args:
+            barcodes (?): List of barcodes(?)
+            index_lengths: List of index lengths (?)
+
+        Returns:
+            int(?):
+
+        '''
+
         try:
             barcode = barcodes.pop()
             logger.info('Getting barcode length: {}'.format(barcode))
@@ -362,6 +462,14 @@ class GetUseBasesMaskJob:
 
     def run(self, barcodes_list, run_info_file):
         '''Calculate use-bases-mask from read & index lengths.
+
+        Args:
+            barcodes_list (list): List of barcodes.
+            run_info_file (str): Path to RunInfo file.
+
+        Returns:
+            str: --use-bases-mask argument passed to bcl2fastq2.
+
         '''
         
         if len(barcodes_list) == 0:
