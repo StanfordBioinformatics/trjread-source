@@ -1,9 +1,6 @@
 #!usr/bin/env python
 '''Convert one flowcell lane of illumina BCL files to demultiplexed FastQs.
 
-Docstring formatting: 
-    http://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html
-
 '''
 
 __author__ = 'pbilling@stanford.edu (Paul Billing-Ross)'
@@ -26,7 +23,7 @@ from xml.etree import ElementTree
 LOCAL_OUTPUT = 'output'
 
 def parse_applet_inputs(applet_inputs):
-    '''Parse applet inputs.
+    '''Parse applet arguments into functional categories.
 
     Args:
         applet_inputs (dict): All applet inputs.
@@ -36,22 +33,25 @@ def parse_applet_inputs(applet_inputs):
 
     '''
 
-    # Stratify inputs by functional category
+    # Used for DNAnexus operations but not added to file properties.
     applet_keys = (
                    'project_dxid', 
                    'project_folder',
                    'lane_data_tar',
                    'metadata_tar',
-                   'barcodes_file') # Do not add to properties
-    sample_keys = (                                 # Add to file/job properties
+                   'barcodes_file')
+    # Sequencing library information & added to file properties.
+    sample_keys = (
                    'run_name', 
                    'lane_index',
                    'library_name',
                    'project_name') 
-    options_values = (                              # Add to file/job properties
+    # Arguments passed to bcl2fastq2 executable & added to file properties.
+    options_values = (
                       'barcode_mismatches', 
                       'tiles',
                       'use_bases_mask')
+    # Flags passed to bcl2fastq2 executable & added to file properties.
     options_flags = (
                      'create_fastq_for_index_reads', 
                      'ignore_missing_bcls', 
@@ -82,8 +82,11 @@ def parse_applet_inputs(applet_inputs):
                   and value is True
                  }
     
+    # Optional input to be added as file tags.
     if 'tags' in applet_inputs:
         tags = applet_inputs['tags']
+    else:
+        tags = []
 
     if 'properties' in applet_inputs.keys():
         logger.warning('Extra properties will overwrite existing values' +
@@ -278,6 +281,8 @@ class Bcl2fastqJob:
 
         Creates a CSV formatted samplesheet with barcode and sample 
         information used in demultiplexing. Barcodes should be specified
+
+        ^????
         
 
         Args:
@@ -333,7 +338,7 @@ class Bcl2fastqJob:
 
         return self.sample_sheet, barcode_sample_dict
 
-    def run(self, use_bases_mask, tools_used_dict, options_dict, flags_dict):
+    def run(self, tools_used_dict, options_dict, flags_dict):
         '''Run bcl2fastq2 program.
 
         Args:
@@ -464,8 +469,8 @@ class GetUseBasesMaskJob:
         else:
             i5_length = 0
         index_lengths.append((i7_length, i5_length))
-        logger.info('{}'.format(index_lengths))
-        return self.count_index_lengths(barcodes, index_lengths)
+        #logger.info('{}'.format(index_lengths))
+        return self._count_index_lengths(barcodes, index_lengths)
 
     def run(self, barcodes_list, run_info_file):
         '''Calculate use-bases-mask from read & index lengths.
@@ -522,7 +527,7 @@ class Bcl2fastqFileUploader:
         '''
 
         fastq_dxlinks = []
-        for fastq in self._find_fastqs(LOCAL_OUTPUT):
+        for fastq in self._find_fastqs():
             fastq_metadata = self._get_scgpm_fastq_name(
                                                         fastq, 
                                                         raw_properties['flowcell_id'], 
@@ -715,7 +720,7 @@ def main(**applet_inputs):
 
     Args:
         applet_input (dict): Input parameters specified when calling applet 
-                             from DNAnexus
+                             from DNAnexus.
 
     Returns:
         dict: Names of outputs and corresponding file dxids.
@@ -737,6 +742,12 @@ def main(**applet_inputs):
     flags_dict = parsed_inputs[3]
     tags = parsed_inputs[4]
 
+    # Determines whether or not to create sample sheet, use bases mask.
+    if not 'barcodes_file' in applet_args.keys():
+        barcodes = False
+    else:
+        barcodes = True
+
     ## Download and untar lane files in /home/dnanexus
     logger.info('Downloading lane data archive: %s' % applet_args['lane_data_tar'])
     lane_tar_filename = download_file(applet_args['lane_data_tar'])
@@ -744,8 +755,11 @@ def main(**applet_inputs):
     logger.info('Downloading lane metadata archive: %s' % applet_args['metadata_tar'])
     metadata_filename = download_file(applet_args['metadata_tar'])
     untar_file(metadata_filename)
-    logger.info('Downloading barcodes file: %s' % applet_args['barcodes_file'])
-    barcodes_filename = download_file(applet_args['barcodes_file'])
+    if barcodes:
+        logger.info('Downloading barcodes file: %s' % applet_args['barcodes_file'])
+        barcodes_filename = download_file(applet_args['barcodes_file'])
+    else:
+        logger.info('No barcodes associated with this sample')
 
     ## Create upload & bcl2fastq runner objects
     uploader = Bcl2fastqFileUploader(
@@ -756,12 +770,15 @@ def main(**applet_inputs):
                            lane_index = sample_args['lane_index'])
 
     # Create sample shseet
-    logger.info('Creating sample sheet')
-    sample_sheet, barcode_sample_dict = bcl_job.create_sample_sheet(barcodes_filename)
-    output['sample_sheet'] = uploader.upload_sample_sheet(sample_sheet, sample_args)
+    if barcodes:
+        logger.info('Creating sample sheet')
+        sample_sheet, barcode_sample_dict = bcl_job.create_sample_sheet(barcodes_filename)
+        output['sample_sheet'] = uploader.upload_sample_sheet(sample_sheet, sample_args)
+    else:
+        logger.info('Skipping sample sheet generation; no barcodes.')
     
     # Parse use-bases-mask from RunInfo.xml and samplesheet barcodes
-    if not 'use_bases_mask' in options_dict.keys():
+    if not 'use_bases_mask' in options_dict.keys() and barcodes:
         logger.info('Inferring use-bases-mask from barcodes')
         base_mask_job = GetUseBasesMaskJob()
         use_bases_mask = base_mask_job.run(
@@ -769,10 +786,11 @@ def main(**applet_inputs):
                                            run_info_file = 'RunInfo.xml')
         options_dict['use_bases_mask'] = use_bases_mask
         #uploader.upload_use_bases_mask(use_bases_mask, sample_args)
+    else:
+        logger.info('Not generating bases mask.')
     
     logger.info('Convert bcl to fastq files')
     bcl_job.run(
-                use_bases_mask = use_bases_mask,
                 tools_used_dict = tools_used_dict,
                 options_dict = options_dict,
                 flags_dict = flags_dict)

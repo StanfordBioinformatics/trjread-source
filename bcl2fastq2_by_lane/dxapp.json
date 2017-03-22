@@ -1,10 +1,10 @@
 {
     "name": "bcl2fastq2_by_lane",
-    "title": "bcl2fastq2_by_lane",
-    "summary": "Convert Illumina Bcl to FastQ files",
-    "description": "Converts Illumina data from Bcl to FastqQ, demultiplexing barcoded samples if appropriate",
+    "title": "SCGPM Bcl2fastq2",
+    "summary": "Convert raw Illumina sequencing results to FastQ files",
+    "description": "Converts Illumina data from Bcl to FastqQ format, demultiplexing barcoded samples if appropriate. This app is designed to be run on data from a single flowcell lane.",
     "dxapi": "1.0.0",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "inputSpec": [
         {
             "name": "project_dxid",
@@ -23,6 +23,7 @@
         {
             "name": "lane_index",
             "label": "Flowcell lane index",
+            "help": "Lane index will be 1-8 for most platforms. MiSeqs only have one lane so will always be 1.",
             "class": "int",
             "optional": false
         },
@@ -180,6 +181,7 @@
         "allProjects": "ADMINISTER",
         "network": ["*"]
     },
+    "authorizedUsers": ["org-scgpm","org-cescg"],
     "details": {
         "upstreamUrl": "http://support.illumina.com/downloads/bcl2fastq-conversion-software-v217.html",
         "upstreamVersion": "2.17.1.14",
