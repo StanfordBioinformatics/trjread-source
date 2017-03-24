@@ -1,6 +1,6 @@
 {
-    "name": "bcl2fastq2_by_lane",
-    "title": "SCGPM Bcl2fastq2",
+    "name": "bcl2fastq_by_lane",
+    "title": "SCGPM Bcl2fastq",
     "summary": "Convert raw Illumina sequencing results to FastQ files",
     "description": "Converts Illumina data from Bcl to FastqQ format, demultiplexing barcoded samples if appropriate. This app is designed to be run on data from a single flowcell lane.",
     "dxapi": "1.0.0",
@@ -55,7 +55,7 @@
             "help": "Text file with one barcode per line: 'ATCGT-GTACT A1'",
             "class": "file",
             "patterns": ["*barcodes.txt"],
-            "optional": false
+            "optional": true
         },
         {
             "name": "library_name",
@@ -161,12 +161,12 @@
             "name": "sample_sheet",
             "label": "Sample sheet",
             "class": "file",
-            "optional": false
+            "optional": true
         }
     ],
     "runSpec": {
         "interpreter": "python2.7",
-        "file": "src/bcl2fastq2_by_lane.py",
+        "file": "src/bcl2fastq_by_lane.py",
         "bundledDepends": [],
         "execDepends": [],
         "systemRequirements": {
