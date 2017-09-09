@@ -428,7 +428,10 @@ class GetUseBasesMaskJob:
                 # RunInfo index numbers are 2 & 3. Corresponding index_length
                 # indices are 0 & 1. Subtract 2 to get corresponding index length.
                 index_length = int(index_lengths[number-2])
-                index_mask = 'I{}'.format(index_length)
+                if index_length > 0:
+                    index_mask = 'I{}'.format(index_length)
+                else:
+                    index_mask = ''
 
                 if read_length - index_length > 0:
                     n_mask = 'n{}'.format(read_length - index_length)
