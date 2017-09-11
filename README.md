@@ -37,7 +37,7 @@ cd trjread-source
 dx build scgpm_bc2lfastq
 ```
 
-### 4. You can also use the trjread-builder module to deploy this applet in stand-alone form or as part of workflow. Instructions for using trjread-builder can be found here: https://github.com/StanfordBioinformatics/trajectoread_builder.
+### 4. You can also use the trjread-builder module to deploy this applet in stand-alone form or as part of workflow. Instructions for using trjread-builder can be found here: https://github.com/StanfordBioinformatics/trjread-builder.
 ```r        
 python builder.py -e production -a bcl2fastq2_by_lane
 ```
