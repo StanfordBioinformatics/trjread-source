@@ -3,8 +3,6 @@
 
 '''
 
-### ADD RUN DATE TO PROPERTIES
-
 __author__ = 'pbilling@stanford.edu (Paul Billing-Ross)'
 
 import os
@@ -43,17 +41,20 @@ def parse_applet_inputs(applet_inputs):
                    'lane_data_tar',
                    'metadata_tar',
                    'barcodes_file')
+    
     # Sequencing library information & added to file properties.
     sample_keys = (
                    'run_name', 
                    'lane_index',
                    'library_name',
                    'project_name') 
+    
     # Arguments passed to bcl2fastq2 executable & added to file properties.
     options_values = (
                       'barcode_mismatches', 
                       'tiles',
                       'use_bases_mask')
+    
     # Flags passed to bcl2fastq2 executable & added to file properties.
     options_flags = (
                      'create_fastq_for_index_reads', 
@@ -227,13 +228,12 @@ def create_subprocess(cmd, pipeStdout=False, checkRetcode=True):
     popen = subprocess.Popen(cmd,shell=True,stdout=stdout,stderr=subprocess.PIPE)
     if checkRetcode:
         stdout,stderr = popen.communicate()
-        if not stdout: #will be None if not piped
+        if not stdout:  # Will be None if not piped
             stdout = ""
         stdout = stdout.strip()
         stderr = stderr.strip()
         retcode = popen.returncode
         if retcode:
-            #below, I'd like to raise a subprocess.SubprocessError, but that doens't exist until Python 3.3.
             raise Exception("subprocess command '{cmd}' failed with returncode '{returncode}'.\n\nstdout is: '{stdout}'.\n\nstderr is: '{stderr}'.".format(cmd=cmd,returncode=retcode,stdout=stdout,stderr=stderr))
         return stdout,stderr
     else:
@@ -365,7 +365,6 @@ class Bcl2fastqJob:
         
         command = 'bcl2fastq ' 
 
-        # Problem; some options are flags while others have values
         for option, value in options_dict.items():
             option = option.replace('_','-')
             command += '--{} {} '.format(option, value)
@@ -391,7 +390,6 @@ class GetUseBasesMaskJob:
     def __init__(self):
         pass
 
-    # I think these two should be private functions.
     def _get_use_bases_mask(self, run_info_file, index_lengths_list):
         '''Get --use-bases-mask value.
 
@@ -482,7 +480,6 @@ class GetUseBasesMaskJob:
         else:
             i5_length = 0
         index_lengths.append((i7_length, i5_length))
-        #logger.info('{}'.format(index_lengths))
         return self._count_index_lengths(barcodes, index_lengths)
 
     def run(self, barcodes_list, run_info_file):
@@ -740,14 +737,14 @@ def main(**applet_inputs):
 
     '''
 
-    ## Define all variables here
+    # Define all variables here
     global logger
     logger = configure_logger(name = 'RunBcl2fastq2', file_handle = True)
 
     tools_used_dict = {'name': 'Bcl to Fastq Conversion and Demultiplexing', 'commands': []}
     output = {}
 
-    ## Parse applet inputs
+    # Parse applet inputs
     parsed_inputs = parse_applet_inputs(applet_inputs)
     applet_args = parsed_inputs[0]
     sample_args = parsed_inputs[1]
@@ -761,7 +758,7 @@ def main(**applet_inputs):
     else:
         barcodes = True
 
-    ## Download and untar lane files in /home/dnanexus
+    # Download and untar lane files in /home/dnanexus
     logger.info('Downloading lane data archive: %s' % applet_args['lane_data_tar'])
     lane_tar_filename = download_file(applet_args['lane_data_tar'])
     untar_file(lane_tar_filename)
@@ -774,7 +771,7 @@ def main(**applet_inputs):
     else:
         logger.info('No barcodes associated with this sample')
 
-    ## Create upload & bcl2fastq runner objects
+    # Create upload & bcl2fastq runner objects
     uploader = Bcl2fastqFileUploader(
                                      applet_args['project_dxid'], 
                                      applet_args['project_folder'])
@@ -799,7 +796,7 @@ def main(**applet_inputs):
                                            barcodes_list = barcode_sample_dict.keys(),
                                            run_info_file = 'RunInfo.xml')
         options_dict['use_bases_mask'] = use_bases_mask
-        #uploader.upload_use_bases_mask(use_bases_mask, sample_args)
+        
     else:
         logger.info('Not generating bases mask.')
     
