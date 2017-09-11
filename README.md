@@ -1,8 +1,21 @@
 # trajectoread_source
 
-This repository contains the source files for DNAnexus applets developed for the Stanford Sequencing Center pipeline. These applets are used in the processing and delivery of sequencing reads data generated from Illumina sequencing platforms.
+## Overview
+Source contains source files of DNAnexus Apps developed to process Illumina reads data. These applets are used in the processing and delivery of sequencing reads data generated from Illumina sequencing platforms.
 
-Currently, only the bcl2fastq_by_lane applet is publicly available. You can build the applet with the following steps.
+## Functions
+* Curate data with multi-dimensional metadata
+* Use the following metadata types to make data searchable
+        * Details: Fixed key-value pairs used to describe data provenance
+        * Properties: Mutable key-value pairs that describe data to be used by downstream analyses
+        * Tags: Mutable strings that tag data with phrases useful to end-users
+* Use a standard dictionary for storing metadata
+
+## Value
+* Make it easy to find relevant data for downstream analyses
+* Allow users to quickly generate sophisticated profiles of large data pools
+* Allow users to do fine-grained data searching/filtering
+* Describe & maintaing data provenance
 
 1. Clone the trajectoread_source repo to your local or remote machine
 
