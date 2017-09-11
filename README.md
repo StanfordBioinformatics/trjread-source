@@ -1,4 +1,4 @@
-# trajectoread_source
+# trajectoread source
 
 ## Overview
 Source contains source files of DNAnexus Apps developed to process Illumina reads data. These applets are used in the processing and delivery of sequencing reads data generated from Illumina sequencing platforms.
