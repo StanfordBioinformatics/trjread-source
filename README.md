@@ -23,9 +23,9 @@ Source contains source files of DNAnexus Apps developed to process Illumina read
 * **src/code.py**: DNAnexus app source code.
 * **resources**: Illumina Bcl2fastq binary.
 
-## Setup
+## Getting Started
 ### 1. Clone the trajectoread_source repo to your local or remote machine
-```r
+```
 git clone https://github.com/StanfordBioinformatics/trjread-source.git
 cd trjread-source
 ```
