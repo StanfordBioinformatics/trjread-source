@@ -17,17 +17,27 @@ Source contains source files of DNAnexus Apps developed to process Illumina read
 * Allow users to do fine-grained data searching/filtering
 * Describe & maintaing data provenance
 
-1. Clone the trajectoread_source repo to your local or remote machine
+## Files
+### SCGPM Bcl2fastq
+* **dxapp.json**: DNAnexus app configuration file. 
+* **src/code.py**: DNAnexus app source code.
+* **resources**: Illumina Bcl2fastq binary.
 
-        $ git clone <trajectoread_source_github_URL>
-        $ cd trajectoread_source
+## Setup
+### 1. Clone the trajectoread_source repo to your local or remote machine
+```r
+git clone https://github.com/StanfordBioinformatics/trjread-source.git
+cd trjread-source
+```
         
-2. Install and configure the DNAnexus software development kit (dx-toolkit). https://wiki.dnanexus.com/Downloads
+### 2. Install and configure the DNAnexus software development kit (dx-toolkit). https://wiki.dnanexus.com/Downloads
 
-3. Build the applet using dx-toolkit.
-        
-        $ dx build bcl2fastq2_by_lane
+### 3. Build as an applet using dx-toolkit.
+```r
+dx build scgpm_bc2lfastq
+```
 
-4. You can also deploy this applet in stand-alone form or as part of workflows using trajectoread_builder. Instructions for using trajectoread_builder can be found here: https://github.com/StanfordBioinformatics/trajectoread_builder.
-        
-        $ python builder.py -e production -a bcl2fastq2_by_lane
+### 4. You can also use the trjread-builder module to deploy this applet in stand-alone form or as part of workflow. Instructions for using trjread-builder can be found here: https://github.com/StanfordBioinformatics/trajectoread_builder.
+```r        
+python builder.py -e production -a bcl2fastq2_by_lane
+```
